@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import math
 
-# Updated Assets from User
+# Assets
 PSPCL_LOGO_URL = "https://pspcl.in/assets/images/logo.png"
 BEECLUE_LOGO_PNG = "https://raw.githubusercontent.com/iamanujnarang/LDHF/e5748e037b76a52a47d610a88c3a3c70f72f1c9a/BEECLUE.png"
 INSTA_ICON = "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
@@ -13,9 +13,11 @@ LINKEDIN_ICON = "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_lo
 def main():
     st.set_page_config(page_title="PSPCL Load Calculator", layout="centered")
 
-    # Custom CSS for Branding and Footer
+    # Custom CSS for UI adjustments
     st.markdown(f"""
         <style>
+        .centered-logo {{ display: flex; justify-content: center; margin-bottom: 10px; }}
+        .header-text {{ text-align: center; margin-bottom: 20px; }}
         .footer-container {{ text-align: center; padding: 30px; margin-top: 50px; border-top: 1px solid #e2e8f0; }}
         .made-with-love {{ font-size: 1.1rem; margin-bottom: 15px; }}
         .heart-symbol {{ color: #e11d48; }}
@@ -26,13 +28,9 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    # Header with PSPCL Logo
-    col_logo, col_title = st.columns([1, 4])
-    with col_logo:
-        st.image(PSPCL_LOGO_URL, width=100)
-    with col_title:
-        st.title("PSPCL Connected Load Calculator")
-        st.caption("Based on Annexure-1: Computation of Connected Load[cite: 1]")
+    # Centered Logo and Header
+    st.markdown(f'<div class="centered-logo"><img src="{PSPCL_LOGO_URL}" width="120"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-text"><h1>PSPCL Connected Load Calculator</h1><p style="color: #64748b;">Based on Annexure-1: Computation of Connected Load[cite: 1]</p></div>', unsafe_allow_html=True)
 
     category = st.selectbox(
         "Select Supply Category",
@@ -42,63 +40,62 @@ def main():
 
     st.divider()
     
-    # Input Data - Defaulting to empty/zero
+    # Input Data
     col1, col2 = st.columns(2)
     inputs = {}
 
     with col1:
         st.subheader("💡 Lighting & Points")
-        inputs['Fan Point'] = st.number_input("Fan Points", min_value=0, value=0)
-        inputs['Light Point'] = st.number_input("Light Points", min_value=0, value=0)
-        inputs['Wall Socket (60W)'] = st.number_input("Wall Sockets (60W)", min_value=0, value=0)
-        inputs['Power Plug (1000W)'] = st.number_input("Power Plugs (1000W)", min_value=0, value=0)
+        inputs['Fan Point'] = st.number_input("Fan Points", min_value=0, value=0, step=1)
+        inputs['Light Point'] = st.number_input("Light Points", min_value=0, value=0, step=1)
+        inputs['Wall Socket (60W)'] = st.number_input("Wall Sockets (60W)", min_value=0, value=0, step=1)
+        inputs['Power Plug (1000W)'] = st.number_input("Power Plugs (1000W)", min_value=0, value=0, step=1)
         
     with col2:
         st.subheader("❄️ Standard Appliances")
-        inputs['Air Conditioner (1.5 Ton)'] = st.number_input("AC Units", min_value=0, value=0)
-        inputs['Geyser (1500W)'] = st.number_input("Geysers", min_value=0, value=0)
-        inputs['Refrigerator (250W)'] = st.number_input("Refrigerators", min_value=0, value=0)
-        inputs['Dessert Cooler (250W)'] = st.number_input("Coolers", min_value=0, value=0)
-        inputs['Washing Machine (500W)'] = st.number_input("Washing Machines", min_value=0, value=0)
+        inputs['Air Conditioner (1.5 Ton)'] = st.number_input("AC Units", min_value=0, value=0, step=1)
+        inputs['Geyser (1500W)'] = st.number_input("Geysers", min_value=0, value=0, step=1)
+        inputs['Refrigerator (250W)'] = st.number_input("Refrigerators", min_value=0, value=0, step=1)
+        inputs['Dessert Cooler (250W)'] = st.number_input("Coolers", min_value=0, value=0, step=1)
+        inputs['Washing Machine (500W)'] = st.number_input("Washing Machines", min_value=0, value=0, step=1)
 
-    # Special Equipment in Expander
     with st.expander("⚙️ Special Equipment (Motive Load, UPS, Welding)"):
         inputs['Water Pump / Motive Load (Watts)'] = st.number_input("Actual Watts", min_value=0, value=0)
-        inputs['3-Phase Socket (6kW)'] = st.number_input("3-Phase Sockets Qty", min_value=0, value=0)
-        inputs['UPS Rating (kVA)'] = st.number_input("UPS kVA", min_value=0.0, value=0.0)
-        inputs['Welding Set (kVA)'] = st.number_input("Welding kVA", min_value=0.0, value=0.0)
+        inputs['3-Phase Socket (6kW)'] = st.number_input("3-Phase Sockets Qty", min_value=0, value=0, step=1)
+        inputs['UPS Rating (kVA)'] = st.number_input("UPS kVA", min_value=0.0, value=0.0, step=0.1)
+        inputs['Welding Set (kVA)'] = st.number_input("Welding kVA", min_value=0.0, value=0.0, step=0.1)
 
-    # Logic Implementation for Summary Table[cite: 1]
+    # Logic Implementation[cite: 1]
     table_data = []
     total_kw = 0.0
 
-    # 1. Fans (Domestic: 1/3 counted | Other: All counted)[cite: 1]
+    # 1. Fans (DS: 1/3 | Other: All)[cite: 1]
     f_qty = inputs['Fan Point']
     f_val = (math.ceil(f_qty / 3) * 60 / 1000) if category == "Domestic/Bulk Supply" else (f_qty * 60 / 1000)
     if f_qty > 0: table_data.append(["Fan Point", f_qty, f"{f_val:.3f} kW"])
     total_kw += f_val
 
-    # 2. Lights (Domestic: 1/2 counted | Other: All counted)[cite: 1]
+    # 2. Lights (DS: 1/2 | Other: All)[cite: 1]
     l_qty = inputs['Light Point']
     l_val = (math.ceil(l_qty / 2) * 40 / 1000) if category == "Domestic/Bulk Supply" else (l_qty * 40 / 1000)
     if l_qty > 0: table_data.append(["Light Point", l_qty, f"{l_val:.3f} kW"])
     total_kw += l_val
 
-    # 3. Sockets (Domestic: 1/4 | Other: 1/3 for 60W)[cite: 1]
+    # 3. Wall Sockets (DS: 1/4 | Other: 1/3)[cite: 1]
     w_qty = inputs['Wall Socket (60W)']
     w_div = 4 if category == "Domestic/Bulk Supply" else 3
     w_val = (math.ceil(w_qty / w_div) * 60 / 1000)
     if w_qty > 0: table_data.append(["Wall Socket (60W)", w_qty, f"{w_val:.3f} kW"])
     total_kw += w_val
 
-    # 4. Power Plugs (Domestic: 1/2 | Other: 1/4)[cite: 1]
+    # 4. Power Plugs (DS: 1/4 | Other: 1/2) - CORRECTED[cite: 1]
     p_qty = inputs['Power Plug (1000W)']
-    p_div = 2 if category == "Domestic/Bulk Supply" else 4
+    p_div = 4 if category == "Domestic/Bulk Supply" else 2
     p_val = (math.ceil(p_qty / p_div) * 1000 / 1000)
     if p_qty > 0: table_data.append(["Power Plug (1000W)", p_qty, f"{p_val:.3f} kW"])
     total_kw += p_val
 
-    # 5. Heavy Appliances (100% rating)[cite: 1]
+    # 5. Heavy Appliances[cite: 1]
     heavy_items = [
         ('Air Conditioner (1.5 Ton)', 2500), ('Geyser (1500W)', 1500), 
         ('Refrigerator (250W)', 250), ('Dessert Cooler (250W)', 250), 
@@ -133,7 +130,7 @@ def main():
         table_data.append(["3-Phase Sockets (6kW)", tp_qty, f"{tp_val:.3f} kW"])
         total_kw += tp_val
 
-    # Results Section
+    # Results Table
     st.divider()
     if table_data:
         st.subheader("📋 Load Computation Table")
@@ -141,9 +138,9 @@ def main():
         st.table(df)
         st.success(f"### Total Connected Load: {total_kw:.3f} kW")
     else:
-        st.info("Please enter quantities above to calculate the load.")
+        st.info("Enter quantities to generate the load computation table.")
 
-    # Footer[cite: 1]
+    # Footer
     footer_html = f"""
     <div class="footer-container">
         <div class="made-with-love">Made with <span class="heart-symbol">❤️</span> by <b>Er. Anuj Narang, JE PSPCL</b></div>

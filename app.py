@@ -13,31 +13,34 @@ LINKEDIN_ICON = "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_lo
 
 def main():
     st.set_page_config(page_title="PSPCL Load Calculator Pro", layout="wide")
-
+    
     # Advanced CSS
     st.markdown(f"""
-        <style>
-        .centered-logo {{ display: flex; justify-content: center; margin-bottom: 10px; }}
-        .header-text {{ text-align: center; margin-bottom: 30px; }}
-        .stNumberInput div div input {{ font-weight: bold; }}
-        .footer-container {{ text-align: center; padding: 40px; margin-top: 60px; border-top: 1px solid #e2e8f0; background-color: #f8fafc; }}
-        .social-icon {{ width: 28px; height: 28px; margin: 0 12px; transition: 0.3s; }}
-        .social-icon:hover {{ transform: translateY(-3px); }}
-        .beeclue-img {{ width: 150px; margin-top: 15px; filter: grayscale(20%); }}
-        .metric-card {{ background: #ffffff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; }}
-        </style>
-    """, unsafe_allow_html=True)
+<style>
+.main {{ background-color: #f8f9fa; }}
+.centered-logo {{ display: flex; justify-content: center; margin-bottom: 10px; }}
+.header-text {{ text-align: center; margin-bottom: 30px; }}
+.stNumberInput div div input {{ font-weight: bold; }}
+.footer-container {{ text-align: center; padding: 40px; margin-top: 60px; border-top: 1px solid #e2e8f0; }}
+.social-icon {{ width: 28px; height: 28px; margin: 0 12px; transition: 0.3s; display: inline-block; vertical-align: middle; }}
+.social-icon:hover {{ transform: translateY(-3px); }}
+.beeclue-img {{ width: 150px; margin-top: 15px; display: block; margin: 0 auto; }}
+.metric-card {{ background: #ffffff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; text-align: center; }}
+.made-with-love {{ font-size: 1.1rem; color: #1e293b; margin-bottom: 15px; font-weight: 500; }}
+.heart-symbol {{ color: #e63946; }}
+.powered-text {{ color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; font-weight: 600; }}
+</style>
+""", unsafe_allow_html=True)
 
     # Top Header
     st.markdown(f'<div class="centered-logo"><img src="{PSPCL_LOGO_URL}" width="130"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="header-text"><h1>PSPCL Connected Load Calculator</h1><p>Official Guidelines: Supply Code 2024 (Annexure-1)[cite: 1]</p></div>', unsafe_allow_html=True)
-
+    st.markdown('<div class="header-text"><h1>PSPCL Connected Load Calculator</h1><p>Official Guidelines: Supply Code 2024 (Annexure-1)</p></div>', unsafe_allow_html=True)
+    
     category = st.selectbox(
         "Select Connection Category",
         ["Domestic/Bulk Supply", "Other than Domestic/Bulk Supply (NRS/Industrial)"],
-        help="Diversity factors change based on this selection.[cite: 1]"
+        help="Diversity factors change based on this selection."
     )
-
     st.divider()
     
     inputs = {}
@@ -55,9 +58,8 @@ def main():
         st.markdown("🚜 **Water Pump (Motor)**")
         bhp = st.number_input("Rating in BHP", min_value=0.0, step=0.5, value=0.0)
         inputs['Motor BHP'] = bhp
-
+        
     st.write("")
-
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 🔌 Sockets & Plugs")
@@ -70,7 +72,7 @@ def main():
         inputs['Refrigerator (250W)'] = st.number_input("Refrigerator (250W)", min_value=0, value=0)
         inputs['Dessert Cooler (250W)'] = st.number_input("Cooler (250W)", min_value=0, value=0)
         inputs['Washing Machine (500W)'] = st.number_input("Washing Machine (500W)", min_value=0, value=0)
-
+        
     # Dedicated AC Section
     st.subheader("🌬️ Air Conditioners (Custom Input)")
     ac_col1, ac_col2 = st.columns(2)
@@ -78,57 +80,71 @@ def main():
         ac_qty = st.number_input("Number of AC Units", min_value=0, value=0, step=1)
     with ac_col2:
         ac_wattage = st.number_input("Wattage per AC (Standard: 2500W)", min_value=0, value=2500, step=100)
-    inputs['AC_Total_Load'] = (ac_qty * ac_wattage)
-
+    
+    inputs['AC_Qty'] = ac_qty
+    inputs['AC_Wattage'] = ac_wattage
+    
     with st.expander("⚙️ Advanced Equipment (UPS, Welding, 3-Phase)"):
         inputs['3-Phase Socket (6kW)'] = st.number_input("3-Phase Sockets (6000W)", min_value=0, value=0)
         inputs['UPS Rating (kVA)'] = st.number_input("UPS (kVA)", min_value=0.0, value=0.0)
         inputs['Welding Set (kVA)'] = st.number_input("Welding (kVA)", min_value=0.0, value=0.0)
 
     # ---------------------------
-    # Calculation Engine[cite: 1]
+    # Calculation Engine
     # ---------------------------
     table_data = []
     total_kw = 0.0
-
-    # 1. Fans & Lights[cite: 1]
+    
+    # 1. Fans & Lights
     f_qty = inputs['Fan Point']
     f_val = (math.ceil(f_qty / 3) * 60 / 1000) if category == "Domestic/Bulk Supply" else (f_qty * 60 / 1000)
     if f_qty > 0: table_data.append(["Fan Point (60W)", f_qty, f"{f_val:.3f} kW"])
     total_kw += f_val
-
+    
     l_qty = inputs['Light Point']
     l_val = (math.ceil(l_qty / 2) * 40 / 1000) if category == "Domestic/Bulk Supply" else (l_qty * 40 / 1000)
     if l_qty > 0: table_data.append(["Light Point (40W)", l_qty, f"{l_val:.3f} kW"])
     total_kw += l_val
-
-    # 2. Sockets[cite: 1]
+    
+    # 2. Sockets
     w_qty = inputs['Wall Socket (60W)']
     w_div = 4 if category == "Domestic/Bulk Supply" else 3
     w_val = (math.ceil(w_qty / w_div) * 60 / 1000)
     if w_qty > 0: table_data.append(["Wall Socket (60W)", w_qty, f"{w_val:.3f} kW"])
     total_kw += w_val
-
+    
     p_qty = inputs['Power Plug (1000W)']
     p_div = 4 if category == "Domestic/Bulk Supply" else 2
     p_val = (math.ceil(p_qty / p_div) * 1000 / 1000)
     if p_qty > 0: table_data.append(["Power Plug (1000W)", p_qty, f"{p_val:.3f} kW"])
     total_kw += p_val
-
-    # 3. AC Calculation (Domestic: Half | Other: Full)[cite: 1]
+    
+    # 3. AC Calculation (Updated Diversity Logic)
     if ac_qty > 0:
-        ac_load_kw = inputs['AC_Total_Load'] / 1000
-        ac_computed = (ac_load_kw / 2) if category == "Domestic/Bulk Supply" else ac_load_kw
-        table_data.append([f"Air Conditioner ({ac_wattage}W each)", ac_qty, f"{ac_computed:.3f} kW"])
+        if category == "Domestic/Bulk Supply":
+            if ac_qty == 1:
+                # 1 AC ke case mein full standard/custom wattage load count hoga (bina scale down ke)
+                ac_computed = (1 * ac_wattage) / 1000
+                counted_qty = 1
+            else:
+                # Fractional values ka ceil adjustment (e.g., 3 AC / 2 = 1.5 -> Ceil karke 2 AC)
+                counted_qty = math.ceil(ac_qty / 2)
+                ac_computed = (counted_qty * ac_wattage) / 1000
+            table_data.append([f"Air Conditioner ({ac_wattage}W each) [Counted: {counted_qty}]", ac_qty, f"{ac_computed:.3f} kW"])
+        else:
+            # Non-DS: Sab ka full calculation
+            ac_computed = (ac_qty * ac_wattage) / 1000
+            table_data.append([f"Air Conditioner ({ac_wattage}W each)", ac_qty, f"{ac_computed:.3f} kW"])
+            
         total_kw += ac_computed
-
-    # 4. Motor Load[cite: 1]
+        
+    # 4. Motor Load
     m_val = inputs['Motor BHP'] * 0.746
     if m_val > 0:
         table_data.append([f"Motor ({inputs['Motor BHP']} BHP)", "Actual", f"{m_val:.3f} kW"])
         total_kw += m_val
-
-    # 5. Other Appliances[cite: 1]
+        
+    # 5. Other Appliances
     heavy_map = [('Geyser (1500W)', 1500), ('Refrigerator (250W)', 250), ('Dessert Cooler (250W)', 250), ('Washing Machine (500W)', 500)]
     for name, watt in heavy_map:
         qty = inputs[name]
@@ -136,18 +152,18 @@ def main():
         if qty > 0:
             table_data.append([name, qty, f"{val:.3f} kW"])
             total_kw += val
-
-    # 6. Advanced[cite: 1]
+            
+    # 6. Advanced
     tp_val = math.ceil(inputs['3-Phase Socket (6kW)'] / 2) * 6.0
     if tp_val > 0:
         table_data.append(["3-Phase Socket (6kW)", inputs['3-Phase Socket (6kW)'], f"{tp_val:.3f} kW"])
         total_kw += tp_val
-
+        
     ups_val = inputs['UPS Rating (kVA)'] * 0.90
     if ups_val > 0:
         table_data.append(["UPS (0.90 PF)", f"{inputs['UPS Rating (kVA)']} kVA", f"{ups_val:.3f} kW"])
         total_kw += ups_val
-
+        
     weld_val = inputs['Welding Set (kVA)'] * 0.40
     if weld_val > 0:
         table_data.append(["Welding (0.40 PF)", f"{inputs['Welding Set (kVA)']} kVA", f"{weld_val:.3f} kW"])
@@ -166,12 +182,31 @@ def main():
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Load_Sheet')
         
+        st.write("")
         st.download_button(label="📥 Download Excel Report", data=output.getvalue(), file_name="PSPCL_Load_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     else:
         st.info("Enter data to see results.")
 
-    # Footer
-    st.markdown(f"""<div class="footer-container"> <div class="made-with-love">Made with <span class="heart-symbol">❤️</span> by <b>Er. Anuj Narang, JE PSPCL</b></div> <div style="margin-bottom: 25px;"> <a href="https://instagram.com/iamanujnarang" target="_blank"><img src="{INSTA_ICON}" class="social-icon"></a> <a href="https://facebook.com/iamanujnarang" target="_blank"><img src="{FB_ICON}" class="social-icon"></a> <a href="https://x.com/iamanujnarang" target="_blank"><img src="{X_ICON}" class="social-icon"></a> <a href="https://linkedin.com/in/iamanujnarang" target="_blank"><img src="{LINKEDIN_ICON}" class="social-icon"></a> </div> <div style="margin-top: 25px;"> <div class="powered-text">In Strategic Collaboration with</div> <a href="https://beeclue.com" target="_blank"> <img src="{BEECLUE_LOGO_PNG}" class="beeclue-img"> </a> </div> <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 25px;">© 2026 | PSPCL Guidelines</div> </div>""", unsafe_allow_html=True)
+    # Footer & Branding (Indentation carefully handled)
+    footer_html = f"""
+<div class="footer-container">
+<div class="made-with-love">Made with <span class="heart-symbol">❤️</span> by <b>Er. Anuj Narang, JE PSPCL</b></div>
+<div style="margin-bottom: 25px;">
+<a href="https://instagram.com/iamanujnarang" target="_blank"><img src="{INSTA_ICON}" class="social-icon"></a>
+<a href="https://facebook.com/iamanujnarang" target="_blank"><img src="{FB_ICON}" class="social-icon"></a>
+<a href="https://x.com/iamanujnarang" target="_blank"><img src="{X_ICON}" class="social-icon"></a>
+<a href="https://linkedin.com/in/iamanujnarang" target="_blank"><img src="{LINKEDIN_ICON}" class="social-icon"></a>
+</div>
+<div style="margin-top: 25px;">
+<div class="powered-text">In Strategic Collaboration with</div>
+<a href="https://beeclue.com" target="_blank">
+<img src="{BEECLUE_LOGO_PNG}" class="beeclue-img">
+</a>
+</div>
+<div style="color: #94a3b8; font-size: 0.85rem; margin-top: 25px;">© 2026 | PSPCL Guidelines</div>
+</div>
+"""
+    st.markdown(footer_html, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()

@@ -73,16 +73,26 @@ def main():
         inputs['Dessert Cooler (250W)'] = st.number_input("Cooler (250W)", min_value=0, value=0)
         inputs['Washing Machine (500W)'] = st.number_input("Washing Machine (500W)", min_value=0, value=0)
         
-    # Dedicated AC Section
-    st.subheader("🌬️ Air Conditioners (Custom Input)")
-    ac_col1, ac_col2 = st.columns(2)
-    with ac_col1:
-        ac_qty = st.number_input("Number of AC Units", min_value=0, value=0, step=1)
-    with ac_col2:
-        ac_wattage = st.number_input("Wattage per AC (Standard: 2500W)", min_value=0, value=2500, step=100)
+    # Dedicated AC Section (Flexible Multiple AC Input)
+    st.subheader("🌬️ Air Conditioners (Custom Multi-Type Input)")
+    st.caption("Agar consumer ke paas alag-alag rating ke AC hain, toh aap dono slots ka use kar sakte hain.")
     
-    inputs['AC_Qty'] = ac_qty
-    inputs['AC_Wattage'] = ac_wattage
+    ac1_col1, ac1_col2 = st.columns(2)
+    with ac1_col1:
+        ac_qty_1 = st.number_input("AC Type-1: Number of Units", min_value=0, value=0, step=1, key="ac1_q")
+    with ac1_col2:
+        ac_wattage_1 = st.number_input("AC Type-1: Wattage per Unit", min_value=0, value=2500, step=100, key="ac1_w")
+        
+    ac2_col1, ac2_col2 = st.columns(2)
+    with ac2_col1:
+        ac_qty_2 = st.number_input("AC Type-2: Number of Units (Optional)", min_value=0, value=0, step=1, key="ac2_q")
+    with ac2_col2:
+        ac_wattage_2 = st.number_input("AC Type-2: Wattage per Unit", min_value=0, value=1500, step=100, key="ac2_w")
+        
+    inputs['AC_Type1_Qty'] = ac_qty_1
+    inputs['AC_Type1_Watt'] = ac_wattage_1
+    inputs['AC_Type2_Qty'] = ac_qty_2
+    inputs['AC_Type2_Watt'] = ac_wattage_2
     
     with st.expander("⚙️ Advanced Equipment (UPS, Welding, 3-Phase)"):
         inputs['3-Phase Socket (6kW)'] = st.number_input("3-Phase Sockets (6000W)", min_value=0, value=0)
@@ -119,22 +129,31 @@ def main():
     if p_qty > 0: table_data.append(["Power Plug (1000W)", p_qty, f"{p_val:.3f} kW"])
     total_kw += p_val
     
-    # 3. AC Calculation (Updated Diversity Logic)
-    if ac_qty > 0:
+    # 3. Dynamic Multi-AC Calculation Logic
+    total_ac_units = ac_qty_1 + ac_qty_2
+    if total_ac_units > 0:
         if category == "Domestic/Bulk Supply":
-            if ac_qty == 1:
-                # 1 AC ke case mein full standard/custom wattage load count hoga (bina scale down ke)
-                ac_computed = (1 * ac_wattage) / 1000
-                counted_qty = 1
+            if total_ac_units == 1:
+                # Agar pure ghar mein sirf ek hi AC laga hai toh uska full load add hoga
+                ac_computed = (ac_qty_1 * ac_wattage_1 + ac_qty_2 * ac_wattage_2) / 1000
+                table_data.append([f"Air Conditioner (Single AC Flat Rate)", 1, f"{ac_computed:.3f} kW"])
             else:
-                # Fractional values ka ceil adjustment (e.g., 3 AC / 2 = 1.5 -> Ceil karke 2 AC)
-                counted_qty = math.ceil(ac_qty / 2)
-                ac_computed = (counted_qty * ac_wattage) / 1000
-            table_data.append([f"Air Conditioner ({ac_wattage}W each) [Counted: {counted_qty}]", ac_qty, f"{ac_computed:.3f} kW"])
+                # Jab total ACs 1 se zyada hon toh ceiling logic lagta hai [math.ceil(Total AC / 2)]
+                total_allowed_qty = math.ceil(total_ac_units / 2)
+                
+                # Sabhi selected ACs ki individual ratings ki flat list banayenge descending order (high to low) mein
+                all_ac_list = ([ac_wattage_1] * ac_qty_1) + ([ac_wattage_2] * ac_qty_2)
+                all_ac_list.sort(reverse=True)
+                
+                # Rule ke mutabik top highest wattages wale allowed ACs ka sum nikala jayega
+                selected_ac_load_w = sum(all_ac_list[:total_allowed_qty])
+                ac_computed = selected_ac_load_w / 1000
+                
+                table_data.append([f"Air Conditioners (Diversity Applied: Top {total_allowed_qty} of {total_ac_units} ACs)", total_ac_units, f"{ac_computed:.3f} kW"])
         else:
-            # Non-DS: Sab ka full calculation
-            ac_computed = (ac_qty * ac_wattage) / 1000
-            table_data.append([f"Air Conditioner ({ac_wattage}W each)", ac_qty, f"{ac_computed:.3f} kW"])
+            # Non-DS: Saare ACs ka full assessment 100% flat load count hoga
+            ac_computed = (ac_qty_1 * ac_wattage_1 + ac_qty_2 * ac_wattage_2) / 1000
+            table_data.append([f"Air Conditioners (Full Load Calculation)", total_ac_units, f"{ac_computed:.3f} kW"])
             
         total_kw += ac_computed
         
@@ -187,7 +206,7 @@ def main():
     else:
         st.info("Enter data to see results.")
 
-    # Footer & Branding (Indentation carefully handled)
+    # Footer & Branding (Indentation strictly zeroed to avoid Streamlit container boxes)
     footer_html = f"""
 <div class="footer-container">
 <div class="made-with-love">Made with <span class="heart-symbol">❤️</span> by <b>Er. Anuj Narang, JE PSPCL</b></div>

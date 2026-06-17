@@ -75,7 +75,7 @@ def main():
         
     # Dedicated AC Section (Flexible Multiple AC Input)
     st.subheader("🌬️ Air Conditioners (Custom Multi-Type Input)")
-    st.caption("Agar consumer ke paas alag-alag rating ke AC hain, toh aap dono slots ka use kar sakte hain.")
+    st.caption("If the consumer has AC units with different ratings, you can use both slots.")
     
     ac1_col1, ac1_col2 = st.columns(2)
     with ac1_col1:
